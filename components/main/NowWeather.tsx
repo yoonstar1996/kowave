@@ -1,77 +1,107 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Card } from "../ui";
-import { getWindDirection } from "@/utils/getWindDirection";
-import { formatTime24H } from "@/utils/formatTime24H";
+import axios from "axios";
+import Image from "next/image";
+import { useLocationStore } from "@/store/useLocationStore";
 
 interface WeatherData {
-  clouds: {
-    all: number;
+  temp: number;
+  app_temp: number;
+  city_name: string;
+  clouds: number;
+  precip: number;
+  rh: number;
+  sunrise: string;
+  sunset: string;
+  weather: {
+    code: number;
+    description: string;
+    icon: string;
   };
-  main: {
-    temp: number;
-    humidity: number;
-    feels_like: number;
-  };
-  name: string;
-  sys: {
-    sunrise: number;
-    sunset: number;
-  };
-  wind: {
-    deg: number;
-    speed: number;
-  };
+  wind_cdir: string;
+  wind_dir: number;
+  wind_spd: number;
 }
 
 function NowWeather() {
-  const [weatherData, setWeatherData] = useState<WeatherData>();
+  const { lat, lon, setLocation } = useLocationStore();
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+
   useEffect(() => {
-    const fetchWeather = async () => {
-      const response = await axios(
-        `https://api.openweathermap.org/data/2.5/weather?lat=37.5665&lon=126.978&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API}&lang=kr`,
-      );
-      console.log("response.data: ", response.data);
-      setWeatherData(response.data);
+    const fetchTodayWeather = async () => {
+      try {
+        const response = await axios.get<{ data: WeatherData[] }>(
+          `https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}`,
+        );
+        setWeatherData(response.data.data[0]);
+      } catch (error) {
+        console.log(error);
+      }
     };
-    fetchWeather();
-  }, []);
+    fetchTodayWeather();
+  }, [lat, lon]);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("현재 위치를 지원하지 않는 브라우저입니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setLocation(latitude, longitude);
+        console.log(`📍 현재 위치: lat=${latitude}, lon=${longitude}`);
+      },
+      (error) => {
+        console.error("현재 위치를 가져오는 중 오류 발생:", error);
+        alert("위치 정보를 가져오는 데 실패했습니다.");
+      },
+    );
+  };
 
   if (!weatherData) return <div>Loading...</div>;
 
   const weatherInfo = [
-    { label: "습도", value: weatherData.main.humidity, unit: "%" },
-    { label: "구름량", value: weatherData.clouds.all, unit: "%" },
-    {
-      label: "체감온도",
-      value: (weatherData.main.feels_like - 273.15).toFixed(2),
-      unit: "℃",
-    },
-    {
-      label: getWindDirection(weatherData.wind.deg),
-      value: weatherData.wind.speed,
-      unit: "m/s",
-    },
-    { label: "일출", value: formatTime24H(weatherData.sys.sunrise) },
-    { label: "일몰", value: formatTime24H(weatherData.sys.sunset) },
+    { label: "습도", value: weatherData.rh, unit: "%" },
+    { label: "구름량", value: weatherData.clouds, unit: "%" },
+    { label: "체감온도", value: weatherData.app_temp, unit: "℃" },
+    { label: "바람", value: weatherData.wind_spd, unit: "m/s" },
+    { label: "일출", value: weatherData.sunrise },
+    { label: "일몰", value: weatherData.sunset },
   ];
 
   return (
     <Card className="col-span-2">
-      <div>TODAY {weatherData.name}</div>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">TODAY {weatherData.city_name}</h2>
+        <button
+          className="rounded bg-blue-500 px-4 py-2 text-white"
+          onClick={handleGetCurrentLocation}
+        >
+          현재 위치
+        </button>
+      </div>
       <div>오늘의 현재 날씨를 조회합니다.</div>
       <div className="flex items-center gap-3">
-        <div className="flex items-center">
-          <div>이미지</div>
+        <div className="flex flex-[1] items-center">
+          <Image
+            width={32}
+            height={32}
+            src={`https://www.weatherbit.io/static/img/icons/${weatherData.weather?.icon}.png`}
+            alt="weather icon"
+          />
 
-          <div className="flex items-center gap-[1px]">
-            <div className="text-[17px] font-semibold">
-              {(weatherData.main.temp - 273.15).toFixed(2)}
+          <div className="flex flex-col gap-[1px]">
+            <div className="flex items-center gap-1">
+              <div className="text-[17px] font-semibold">
+                {weatherData.temp}
+              </div>
+              <p className="text-sm">℃</p>
             </div>
-            <p className="text-sm">&#8451;</p>
           </div>
         </div>
-        <div className="flex-1">
+        <div className="flex-[3]">
           <div className="grid grid-cols-3">
             {weatherInfo.map((item, index) => (
               <WeatherItem
@@ -102,7 +132,7 @@ const WeatherItem = ({
   return (
     <div className="flex items-center gap-1">
       <label className="text-sm text-gray-600">{label}</label>
-      <div className="flex items-center gap-[2px]">
+      <div className="flex items-center gap-[3px]">
         <div className="text-[17px] font-semibold">{value}</div>
         {unit && <p className="text-sm">{unit}</p>}
       </div>
