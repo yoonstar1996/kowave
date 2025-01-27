@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { Card } from "../ui";
 import axios from "axios";
 import Image from "next/image";
+import { useLocationStore } from "@/store/useLocationStore";
+import Title from "../common/Title";
 
 interface HourlyWeatherData {
   timestamp_local: string;
@@ -19,22 +21,20 @@ interface HourlyWeatherData {
 }
 
 function HourlyWeather() {
+  const { lat, lon } = useLocationStore();
+
   const [hourlyData, setHourlyData] = useState<HourlyWeatherData[]>([]);
 
   useEffect(() => {
     const fetchHourlyWeather = async () => {
-      try {
-        const response = await axios.get<{ data: HourlyWeatherData[] }>(
-          `https://api.weatherbit.io/v2.0/forecast/hourly?lat=37.5665&lon=126.978&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}&hours=12`,
-        );
-        // console.log("response.data.data: ", response.data.data);
-        setHourlyData(response.data.data);
-      } catch (error) {
-        console.log(error);
-      }
+      const response = await axios.get<{ data: HourlyWeatherData[] }>(
+        `https://api.weatherbit.io/v2.0/forecast/hourly?lat=${lat}&lon=${lon}8&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}&hours=12`,
+      );
+      // console.log("response.data.data: ", response.data.data);
+      setHourlyData(response.data.data);
     };
     fetchHourlyWeather();
-  }, []);
+  }, [lat, lon]);
 
   const tableRows: {
     label: string;
@@ -52,14 +52,17 @@ function HourlyWeather() {
         />
       ),
     },
-    { label: "온도 (°C)", render: (data: HourlyWeatherData) => `${data.temp}` },
+    {
+      label: `온도 ${"\u2103"}`,
+      render: (data: HourlyWeatherData) => `${data.temp}`,
+    },
     {
       label: "강수확률 (%)",
       render: (data: HourlyWeatherData) => `${data.pop}`,
     },
     {
       label: "강수량 (mm)",
-      render: (data: HourlyWeatherData) => `${data.precip}`,
+      render: (data: HourlyWeatherData) => `${data.precip.toFixed(2)}`,
     },
     {
       label: "바람 (m/s)",
@@ -70,7 +73,7 @@ function HourlyWeather() {
 
   return (
     <Card className="p-4">
-      <h2 className="mb-4 text-lg font-semibold">시간별 날씨</h2>
+      <Title title="시간별 날씨" />
       <div className="overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300 dark:border-gray-700">
           <thead>

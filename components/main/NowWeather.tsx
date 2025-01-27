@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card } from "../ui";
+import { Button, Card } from "../ui";
 import axios from "axios";
 import Image from "next/image";
 import { useLocationStore } from "@/store/useLocationStore";
@@ -29,14 +29,10 @@ function NowWeather() {
 
   useEffect(() => {
     const fetchTodayWeather = async () => {
-      try {
-        const response = await axios.get<{ data: WeatherData[] }>(
-          `https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}`,
-        );
-        setWeatherData(response.data.data[0]);
-      } catch (error) {
-        console.log(error);
-      }
+      const response = await axios.get<{ data: WeatherData[] }>(
+        `https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}`,
+      );
+      setWeatherData(response.data.data[0]);
     };
     fetchTodayWeather();
   }, [lat, lon]);
@@ -75,12 +71,12 @@ function NowWeather() {
     <Card className="col-span-2">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">TODAY {weatherData.city_name}</h2>
-        <button
+        <Button
           className="rounded bg-blue-500 px-4 py-2 text-white"
           onClick={handleGetCurrentLocation}
         >
           현재 위치
-        </button>
+        </Button>
       </div>
       <div>오늘의 현재 날씨를 조회합니다.</div>
       <div className="flex items-center gap-3">
@@ -97,7 +93,7 @@ function NowWeather() {
               <div className="text-[17px] font-semibold">
                 {weatherData.temp}
               </div>
-              <p className="text-sm">℃</p>
+              <p className="text-sm">{"\u2103"}</p>
             </div>
           </div>
         </div>
