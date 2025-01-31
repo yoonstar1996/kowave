@@ -1,38 +1,17 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Button, Card } from "../ui";
 import Image from "next/image";
 import { useLocationStore } from "@/store/useLocationStore";
-import { fetchTodayWeather } from "@/utils/fetchWeather";
 import { NowWeather as INowWeather } from "@/type/WeatherType";
 
-function NowWeather() {
+interface Props {
+  data: INowWeather | null;
+}
+
+function NowWeather({ data: nowWeather }: Props) {
   const { lat, lon, setLocation } = useLocationStore();
-  const [nowWeather, setNowWeather] = useState<INowWeather | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchTodayWeather(lat, lon);
-        if (isMounted) setNowWeather(data);
-      } catch (error) {
-        console.error("날씨 데이터를 가져오는 중 오류 발생:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [lat, lon]);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -68,7 +47,7 @@ function NowWeather() {
     [nowWeather],
   );
 
-  if (isLoading || !nowWeather) return <div>현재 날씨 데이터 로딩중...</div>;
+  if (!nowWeather) return null;
 
   return (
     <Card className="col-span-2">
