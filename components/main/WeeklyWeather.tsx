@@ -47,8 +47,9 @@ function DailyWeather() {
   return (
     <Card className="px-0 py-4 text-black">
       <Title title="주간별 날씨" className="px-4" />
-      {/* 상단 카드 (오늘, 내일) */}
+      {/* 스크롤을 이용하여 볼 수 있도록 하였습니다. */}
       <ScrollArea className="h-[557px] px-4">
+        {/* 상단 카드 (오늘, 내일) */}
         <div className="mb-4 flex flex-col items-center gap-4">
           {todayAndTomorrow.map((day, index) => {
             const formattedDate = new Date(day.datetime).toLocaleDateString(
