@@ -1,40 +1,37 @@
-import React, { useEffect, useState } from "react";
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { Button, Card } from "../ui";
-import axios from "axios";
 import Image from "next/image";
 import { useLocationStore } from "@/store/useLocationStore";
-
-interface WeatherData {
-  temp: number;
-  app_temp: number;
-  city_name: string;
-  clouds: number;
-  precip: number;
-  rh: number;
-  sunrise: string;
-  sunset: string;
-  weather: {
-    code: number;
-    description: string;
-    icon: string;
-  };
-  wind_cdir: string;
-  wind_dir: number;
-  wind_spd: number;
-}
+import { fetchTodayWeather } from "@/utils/fetchWeather";
+import { NowWeather as INowWeather } from "@/type/WeatherType";
 
 function NowWeather() {
   const { lat, lon, setLocation } = useLocationStore();
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [nowWeather, setNowWeather] = useState<INowWeather | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchTodayWeather = async () => {
-      const response = await axios.get<{ data: WeatherData[] }>(
-        `https://api.weatherbit.io/v2.0/current?lat=${lat}&lon=${lon}&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}`,
-      );
-      setWeatherData(response.data.data[0]);
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchTodayWeather(lat, lon);
+        if (isMounted) setNowWeather(data);
+      } catch (error) {
+        console.error("날씨 데이터를 가져오는 중 오류 발생:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetchTodayWeather();
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [lat, lon]);
 
   const handleGetCurrentLocation = () => {
@@ -46,8 +43,8 @@ function NowWeather() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        if (latitude === lat && longitude === lon) return;
         setLocation(latitude, longitude);
-        console.log(`📍 현재 위치: lat=${latitude}, lon=${longitude}`);
       },
       (error) => {
         console.error("현재 위치를 가져오는 중 오류 발생:", error);
@@ -56,21 +53,27 @@ function NowWeather() {
     );
   };
 
-  if (!weatherData) return <div>Loading...</div>;
+  const weatherInfo = useMemo(
+    () =>
+      nowWeather
+        ? [
+            { label: "습도", value: nowWeather.rh, unit: "%" },
+            { label: "구름량", value: nowWeather.clouds, unit: "%" },
+            { label: "체감온도", value: nowWeather.app_temp, unit: "℃" },
+            { label: "바람", value: nowWeather.wind_spd, unit: "m/s" },
+            { label: "일출", value: nowWeather.sunrise },
+            { label: "일몰", value: nowWeather.sunset },
+          ]
+        : [],
+    [nowWeather],
+  );
 
-  const weatherInfo = [
-    { label: "습도", value: weatherData.rh, unit: "%" },
-    { label: "구름량", value: weatherData.clouds, unit: "%" },
-    { label: "체감온도", value: weatherData.app_temp, unit: "℃" },
-    { label: "바람", value: weatherData.wind_spd, unit: "m/s" },
-    { label: "일출", value: weatherData.sunrise },
-    { label: "일몰", value: weatherData.sunset },
-  ];
+  if (isLoading || !nowWeather) return <div>현재 날씨 데이터 로딩중...</div>;
 
   return (
     <Card className="col-span-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">TODAY {weatherData.city_name}</h2>
+        <h2 className="text-lg font-bold">TODAY {nowWeather.city_name}</h2>
         <Button
           className="rounded bg-blue-500 px-4 py-2 text-white"
           onClick={handleGetCurrentLocation}
@@ -84,15 +87,13 @@ function NowWeather() {
           <Image
             width={32}
             height={32}
-            src={`https://www.weatherbit.io/static/img/icons/${weatherData.weather?.icon}.png`}
+            src={`https://www.weatherbit.io/static/img/icons/${nowWeather.weather?.icon}.png`}
             alt="weather icon"
           />
 
           <div className="flex flex-col gap-[1px]">
             <div className="flex items-center gap-1">
-              <div className="text-[17px] font-semibold">
-                {weatherData.temp}
-              </div>
+              <div className="text-[17px] font-semibold">{nowWeather.temp}</div>
               <p className="text-sm">{"\u2103"}</p>
             </div>
           </div>

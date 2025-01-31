@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useLocationStore } from "@/store/useLocationStore";
 import { LOCATIONS } from "@/data/Locations";
 import {
@@ -12,18 +12,25 @@ import {
 } from "../ui";
 
 function Header() {
-  const setLocation = useLocationStore((state) => state.setLocation);
+  const { lat, lon, setLocation } = useLocationStore();
 
-  // 🔥 onValueChange의 올바른 타입 적용
   const handleSelectChange = (value: string) => {
     const selectedLocation = LOCATIONS.find((loc) => loc.name === value);
     if (selectedLocation) {
+      if (lat === selectedLocation.lat && lon === selectedLocation.lon) return;
       setLocation(selectedLocation.lat, selectedLocation.lon);
-      console.log(
-        `📍 선택된 지역: ${selectedLocation.name}, 위도: ${selectedLocation.lat}, 경도: ${selectedLocation.lon}`,
-      );
     }
   };
+
+  const locationsList = useMemo(
+    () =>
+      LOCATIONS.map((location) => (
+        <SelectItem key={location.name} value={location.name}>
+          {location.name}
+        </SelectItem>
+      )),
+    [],
+  );
 
   return (
     <header className="mb-5">
@@ -36,13 +43,7 @@ function Header() {
           <SelectTrigger className="w-[150px] border bg-white p-2 text-black">
             <SelectValue placeholder="지역을 선택하세요" />
           </SelectTrigger>
-          <SelectContent>
-            {LOCATIONS.map((location) => (
-              <SelectItem key={location.name} value={location.name}>
-                {location.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
+          <SelectContent>{locationsList}</SelectContent>
         </Select>
       </div>
     </header>

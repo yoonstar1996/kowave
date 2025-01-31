@@ -1,75 +1,76 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card } from "../ui";
-import axios from "axios";
 import Image from "next/image";
 import { useLocationStore } from "@/store/useLocationStore";
 import Title from "../common/Title";
-
-interface HourlyWeatherData {
-  timestamp_local: string;
-  temp: number;
-  pop: number;
-  precip: number;
-  wind_spd: number;
-  rh: number;
-  weather: {
-    icon: string;
-    description: string;
-  };
-}
+import { fetchHourlyWeather } from "@/utils/fetchWeather";
+import { HourlyWeather as IHourlyWeather } from "@/type/WeatherType";
 
 function HourlyWeather() {
   const { lat, lon } = useLocationStore();
-
-  const [hourlyData, setHourlyData] = useState<HourlyWeatherData[]>([]);
+  const [hourlyWeather, setHourlyWeather] = useState<IHourlyWeather[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchHourlyWeather = async () => {
-      const response = await axios.get<{ data: HourlyWeatherData[] }>(
-        `https://api.weatherbit.io/v2.0/forecast/hourly?lat=${lat}&lon=${lon}8&key=${process.env.NEXT_PUBLIC_WEATHER_BIT_API}&hours=12`,
-      );
-      // console.log("response.data.data: ", response.data.data);
-      setHourlyData(response.data.data);
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchHourlyWeather(lat, lon);
+        if (isMounted) setHourlyWeather(data);
+      } catch (error) {
+        console.error("날씨 데이터를 가져오는 중 오류 발생:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    fetchHourlyWeather();
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [lat, lon]);
 
-  const tableRows: {
-    label: string;
-    render: (data: HourlyWeatherData) => React.ReactNode;
-  }[] = [
-    {
-      label: "날씨",
-      render: (data: HourlyWeatherData) => (
-        <Image
-          width={32}
-          height={32}
-          src={`https://www.weatherbit.io/static/img/icons/${data.weather.icon}.png`}
-          alt={data.weather.description}
-          className="mx-auto h-8 w-8"
-        />
-      ),
-    },
-    {
-      label: `온도 ${"\u2103"}`,
-      render: (data: HourlyWeatherData) => `${data.temp}`,
-    },
-    {
-      label: "강수확률 (%)",
-      render: (data: HourlyWeatherData) => `${data.pop}`,
-    },
-    {
-      label: "강수량 (mm)",
-      render: (data: HourlyWeatherData) => `${data.precip.toFixed(2)}`,
-    },
-    {
-      label: "바람 (m/s)",
-      render: (data: HourlyWeatherData) => `${data.wind_spd.toFixed(2)}`,
-    },
-    { label: "습도 (%)", render: (data: HourlyWeatherData) => `${data.rh}` },
-  ];
+  const tableRows = useMemo(() => {
+    return [
+      {
+        label: "날씨",
+        render: (data: IHourlyWeather) => (
+          <Image
+            width={32}
+            height={32}
+            src={`https://www.weatherbit.io/static/img/icons/${data.weather.icon}.png`}
+            alt={data.weather.description}
+            className="mx-auto h-8 w-8"
+          />
+        ),
+      },
+      {
+        label: `온도 ${"\u2103"}`,
+        render: (data: IHourlyWeather) => `${data.temp}`,
+      },
+      {
+        label: "강수확률 (%)",
+        render: (data: IHourlyWeather) => `${data.pop}`,
+      },
+      {
+        label: "강수량 (mm)",
+        render: (data: IHourlyWeather) => `${data.precip.toFixed(2)}`,
+      },
+      {
+        label: "바람 (m/s)",
+        render: (data: IHourlyWeather) => `${data.wind_spd.toFixed(2)}`,
+      },
+      { label: "습도 (%)", render: (data: IHourlyWeather) => `${data.rh}` },
+    ];
+  }, []);
+
+  if (isLoading || !hourlyWeather)
+    return <div>주간별 날씨 데이터 로딩중...</div>;
 
   return (
     <Card className="p-4">
@@ -81,7 +82,7 @@ function HourlyWeather() {
               <th className="border border-gray-300 p-2 dark:border-gray-700">
                 시간
               </th>
-              {hourlyData.map((hour, index) => (
+              {hourlyWeather.map((hour, index) => (
                 <th
                   key={index}
                   className="border border-gray-300 p-2 dark:border-gray-700"
@@ -100,7 +101,7 @@ function HourlyWeather() {
                     {row.label.split(" ")[1]}
                   </p>
                 </td>
-                {hourlyData.map((data, index) => (
+                {hourlyWeather.map((data, index) => (
                   <td
                     key={index}
                     className="border border-gray-300 p-2 text-center font-semibold dark:border-gray-700"

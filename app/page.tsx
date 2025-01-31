@@ -4,12 +4,20 @@ import Main from "@/components/main/Main";
 
 export default function Home() {
   return (
-    <div className="flex w-full flex-col gap-5 bg-[#222] p-5 text-white">
-      <div className="mx-auto max-w-[1536px]">
+    <div className="flex flex-col gap-5 bg-[#222] p-5 text-white">
+      <main className="mx-auto max-w-[1536px]">
         <Header />
         <Main />
         <Footer />
-      </div>
+      </main>
     </div>
   );
 }
+
+/**
+ * 사용한 API
+ * 날씨 API: weatherbit.io
+ * 상태 관리: zustand
+ * CSS: tailwind.css
+ * 단순 컴포넌트: shadcn ui
+ */
