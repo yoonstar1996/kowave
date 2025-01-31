@@ -26,7 +26,7 @@ function Header() {
   };
 
   return (
-    <header>
+    <header className="mb-5">
       <div className="flex w-1/2 items-center gap-3">
         <div className="flex items-center gap-2">
           <div className="text-lg font-bold">KOWAVE</div>
