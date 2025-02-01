@@ -1,48 +1,23 @@
 "use client";
 
-import { useLocationStore } from "@/store/useLocationStore";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card, ScrollArea } from "../ui";
 import Title from "../common/Title";
-import { fetchDailyWeather } from "@/utils/fetchWeather";
 import { DailyWeather as IDailyWeather } from "@/type/WeatherType";
 import Image from "next/image";
 
-function DailyWeather() {
-  const { lat, lon } = useLocationStore();
-  const [dailyWeather, setDailyWeather] = useState<IDailyWeather[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+interface Props {
+  data: IDailyWeather[];
+}
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchDailyWeather(lat, lon);
-        if (isMounted) setDailyWeather(data);
-      } catch (error) {
-        console.error("날씨 데이터를 가져오는 중 오류 발생:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [lat, lon]);
-
+function DailyWeather({ data: dailyWeather }: Props) {
   const todayAndTomorrow = useMemo(
     () => dailyWeather.slice(0, 2),
     [dailyWeather],
   );
   const twoDaysAfter = useMemo(() => dailyWeather.slice(2), [dailyWeather]);
 
-  if (isLoading || !dailyWeather)
-    return <div>주간별 날씨 데이터 로딩중...</div>;
+  if (dailyWeather.length === 0) return null;
 
   return (
     <Card className="px-0 py-4 text-black">

@@ -1,40 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Card } from "../ui";
 import Image from "next/image";
-import { useLocationStore } from "@/store/useLocationStore";
 import Title from "../common/Title";
-import { fetchHourlyWeather } from "@/utils/fetchWeather";
 import { HourlyWeather as IHourlyWeather } from "@/type/WeatherType";
 
-function HourlyWeather() {
-  const { lat, lon } = useLocationStore();
-  const [hourlyWeather, setHourlyWeather] = useState<IHourlyWeather[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+interface Props {
+  data: IHourlyWeather[];
+}
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchHourlyWeather(lat, lon);
-        if (isMounted) setHourlyWeather(data);
-      } catch (error) {
-        console.error("날씨 데이터를 가져오는 중 오류 발생:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [lat, lon]);
-
+function HourlyWeather({ data: hourlyWeather }: Props) {
   const tableRows = useMemo(() => {
     return [
       {
@@ -69,8 +45,7 @@ function HourlyWeather() {
     ];
   }, []);
 
-  if (isLoading || !hourlyWeather)
-    return <div>주간별 날씨 데이터 로딩중...</div>;
+  if (hourlyWeather.length === 0) return null;
 
   return (
     <Card className="p-4">
